@@ -1,0 +1,16 @@
+{
+    "name": "代理中心",
+    "short_name": "代理中心",
+    "description": "AI 工具聚合展示、MCP 服务、Skills、资讯收藏",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f0f4ff",
+    "theme_color": "#7c5cfc",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
