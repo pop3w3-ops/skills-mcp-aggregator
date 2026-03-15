@@ -94,7 +94,7 @@ function initKeyboard() {
     });
 }
 
-function initAutoRefresh() { setInterval(async () => { try { await fetch(`${API} /news/refresh`, { method: 'POST' }); } catch (e) { } }, 30 * 60 * 1000); }
+function initAutoRefresh() { setInterval(async () => { try { await fetch(`${API}/news/refresh`, { method: 'POST' }); } catch (e) { } }, 30 * 60 * 1000); }
 
 
 

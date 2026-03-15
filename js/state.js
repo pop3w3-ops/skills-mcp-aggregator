@@ -14,7 +14,7 @@ export const state = {
     currentTab: 'dashboard'
 };
 
-export const API = 'http://localhost:3001/api';
+export const API = '/api';
 
 // For legacy code that relies on window globals during refactor
 window.appState = state;
