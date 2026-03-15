@@ -10,28 +10,36 @@
         "name": "诺基亚 CEO 贾斯汀 · 霍塔德：AI 时代需要彻底重构网络架构",
         "url": "https://www.ithome.com/0/926/297.htm",
         "description": "来源: IT之家",
-        "category": "大模型",
-        "icon": "⚡"
+        "category": "行业应用",
+        "icon": "📰"
       },
       {
         "name": "【IT之家开箱】宏碁 N8000 PCIe 5.0 固态硬盘图赏：搭载 6nm 主控超低功耗、11GB/s 性能",
         "url": "https://www.ithome.com/0/926/296.htm",
         "description": "来源: IT之家",
-        "category": "大模型",
-        "icon": "⚡"
+        "category": "行业应用",
+        "icon": "📰"
       },
       {
         "name": "Nothing Phone（4a）/ Pro 手机发布：全新灯条 / 矩阵屏设计、搭骁龙 7s/7 Gen 4 处理器，349 欧元起",
         "url": "https://www.ithome.com/0/926/293.htm",
         "description": "来源: IT之家",
-        "category": "大模型"
+        "category": "行业应用",
+        "icon": "📰"
       },
       {
         "name": "奔驰新车平台首落中国，要用吉利架构 | 36氪独家",
         "url": "<![CDATA[https://36kr.com/p/3709965457240197?f=rss]]>",
         "description": "来源: 36氪",
         "category": "行业应用",
-        "icon": "⚡"
+        "icon": "📰"
+      },
+      {
+        "name": "长江存储首款 PCIe 5.0 商用消费级固态硬盘 PC550 发布：满载功耗低于 6W，最高 2TB 容量",
+        "url": "https://www.ithome.com/0/926/449.html",
+        "description": "IT之家 3 月 6 日消息，长江存储官网日前上线了旗下首款 PCIe 5.0 商用 SSD —— PC550。据长江存储官网介绍，PC550 是长江存储专为 AI PC 打造的 PCIe 5.0 商用消费级固态硬盘。它采用 X4-9070 闪存芯片及四通道方案，引入多命名空间管理与谷底预测算法技术，在大幅提升性能的同时，显著降低了功耗与发热。PC550 可选 512GB、1TB、2TB 三个容量",
+        "category": "行业应用",
+        "icon": "📰"
       }
     ]
   },
