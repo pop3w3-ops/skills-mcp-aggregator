@@ -7,29 +7,53 @@ import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
 
-import { kv } from '@vercel/kv';
+import Redis from 'ioredis';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const DATA_FILE = path.join(process.cwd(), 'data.json');
 const KV_KEY = 'app_collections_data';
 
-// ========== 数据持久化 (Vercel KV 版) ==========
-async function loadData() {
-    try {
-        // 优先从 KV 数据库读取
-        const data = await kv.get(KV_KEY);
-        if (data) return data;
+// 初始化 Redis 客户端
+let redis;
+function getRedis() {
+    if (!redis) {
+        const url = process.env.KV_REDIS_URL;
+        if (!url) {
+            console.warn('⚠️ 未找到 KV_REDIS_URL，数据库功能将不可用');
+            return null;
+        }
+        redis = new Redis(url, {
+            connectTimeout: 10000,
+            maxRetriesPerRequest: 3
+        });
+        redis.on('error', (err) => console.error('Redis 连接错误:', err.message));
+    }
+    return redis;
+}
 
-        // 如果 KV 为空，尝试从项目根目录的 data.json 初始化（迁移逻辑）
+// ========== 数据持久化 (ioredis 版) ==========
+async function loadData() {
+    const client = getRedis();
+    try {
+        if (client) {
+            const raw = await client.get(KV_KEY);
+            if (raw) return JSON.parse(raw);
+        }
+
+        // 如果 Redis 为空或连不上，尝试从 data.json 读取 (初次同步)
         if (fs.existsSync(DATA_FILE)) {
             const fileData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-            await kv.set(KV_KEY, fileData);
-            console.log('🌱 已从 data.json 完成数据库初始化');
+            if (client) {
+                await client.set(KV_KEY, JSON.stringify(fileData));
+                console.log('🌱 数据已同步至云端 Redis');
+            }
             return fileData;
         }
     } catch (e) {
-        console.error('数据库读取失败:', e.message);
+        console.error('数据库解析失败:', e.message);
     }
+    
+    // 兜底默认数据
     return {
         news: { categories: ['AI 前沿', '大模型', '开源项目', '行业应用'], items: [] },
         mcp: { categories: ['数据库', '浏览器', '文件处理', '搜索', '效率工具'], items: [] },
@@ -39,11 +63,13 @@ async function loadData() {
 }
 
 async function saveData(data) {
+    const client = getRedis();
+    if (!client) return;
     try {
-        await kv.set(KV_KEY, data);
-        console.log('✅ 数据已保存至 Vercel KV');
+        await client.set(KV_KEY, JSON.stringify(data));
+        console.log('✅ 项目变更已保存至云端');
     } catch (e) {
-        console.error('数据库写入失败:', e.message);
+        console.error('数据库保存失败:', e.message);
     }
 }
 
