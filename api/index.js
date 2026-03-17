@@ -7,18 +7,28 @@ import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-// Use process.cwd() to find data.json in the project root
-const DATA_FILE = path.join(process.cwd(), 'data.json');
+import { kv } from '@vercel/kv';
 
-// ========== 数据持久化 ==========
-function loadData() {
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const DATA_FILE = path.join(process.cwd(), 'data.json');
+const KV_KEY = 'app_collections_data';
+
+// ========== 数据持久化 (Vercel KV 版) ==========
+async function loadData() {
     try {
+        // 优先从 KV 数据库读取
+        const data = await kv.get(KV_KEY);
+        if (data) return data;
+
+        // 如果 KV 为空，尝试从项目根目录的 data.json 初始化（迁移逻辑）
         if (fs.existsSync(DATA_FILE)) {
-            return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+            const fileData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+            await kv.set(KV_KEY, fileData);
+            console.log('🌱 已从 data.json 完成数据库初始化');
+            return fileData;
         }
     } catch (e) {
-        console.error('读取数据失败:', e.message);
+        console.error('数据库读取失败:', e.message);
     }
     return {
         news: { categories: ['AI 前沿', '大模型', '开源项目', '行业应用'], items: [] },
@@ -28,12 +38,12 @@ function loadData() {
     };
 }
 
-function saveData(data) {
+async function saveData(data) {
     try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-        console.log('💾 数据已保存到', DATA_FILE);
+        await kv.set(KV_KEY, data);
+        console.log('✅ 数据已保存至 Vercel KV');
     } catch (e) {
-        console.error('写入数据失败:', e.message);
+        console.error('数据库写入失败:', e.message);
     }
 }
 
@@ -147,7 +157,7 @@ export default async function handler(req, res) {
 
     try {
         if (pathname === '/api/news' && req.method === 'GET') {
-            const data = loadData();
+            const data = await loadData();
             res.statusCode = 200;
             res.end(JSON.stringify({ items: data.cachedNews || [] }));
             return;
@@ -156,17 +166,17 @@ export default async function handler(req, res) {
         if (pathname === '/api/news/refresh' && req.method === 'POST') {
             const news = await fetchAllNews();
             const translated = await translateNewsItems(news);
-            const data = loadData();
+            const data = await loadData();
             data.cachedNews = translated;
             data.lastRefresh = new Date().toISOString();
-            saveData(data);
+            await saveData(data);
             res.statusCode = 200;
             res.end(JSON.stringify({ ok: true, items: translated }));
             return;
         }
 
         if (pathname === '/api/collections' && req.method === 'GET') {
-            const data = loadData();
+            const data = await loadData();
             res.statusCode = 200;
             res.end(JSON.stringify(data));
             return;
@@ -174,7 +184,7 @@ export default async function handler(req, res) {
 
         if (pathname === '/api/collections' && req.method === 'POST') {
             const body = await parseBody(req);
-            const data = loadData();
+            const data = await loadData();
             const { action, type } = body;
             // Simplified actions for brevity, can be expanded
             if (action === 'add-item') {
@@ -182,7 +192,7 @@ export default async function handler(req, res) {
                 if (!data[type]) data[type] = { categories: [], items: [] };
                 data[type].items.push(item);
             }
-            saveData(data);
+            await saveData(data);
             res.statusCode = 200;
             res.end(JSON.stringify({ ok: true, data }));
             return;

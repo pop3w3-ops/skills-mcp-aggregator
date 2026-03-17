@@ -59,6 +59,14 @@
         "path": "../MCP/bilibili-mcp-js",
         "icon": "🔍",
         "url": "https://github.com/34892002/bilibili-mcp-js"
+      },
+      {
+        "name": "WebMCP (Next-gen Browser Tool)",
+        "description": "由 Google/Microsoft 发起的基于 JS 的模型上下文协议预览版。允许 AI 直接调用网页函数，相比传统视觉操作节省 90% 以上 Token，且操作具备 100% 确定性。目前已在 Chrome 推出早期预览。",
+        "category": "浏览器",
+        "path": "../MCP/webmcp-main",
+        "icon": "🌐",
+        "url": "https://github.com/webmachinelearning/webmcp"
       }
     ]
   },
