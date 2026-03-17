@@ -91,18 +91,28 @@ export function clearNotifications() {
     document.dispatchEvent(new CustomEvent('renderNotificationsRequest'));
 }
 
-export function showModal(title, html) {
+export function showModal(title, html, options = {}) {
     const mt = document.getElementById('modal-title');
     const mb = document.getElementById('modal-body');
     const mo = document.getElementById('modal-overlay');
+    const m = mo?.querySelector('.modal');
+    
     if (mt) mt.textContent = title;
     if (mb) mb.innerHTML = html;
+    
+    if (m) {
+        if (options.wide) m.classList.add('wide');
+        else m.classList.remove('wide');
+    }
+    
     if (mo) mo.classList.add('show');
 }
 
 export function hideModal() {
     const mo = document.getElementById('modal-overlay');
+    const m = mo?.querySelector('.modal');
     if (mo) mo.classList.remove('show');
+    if (m) m.classList.remove('wide');
 }
 
 export function confirmAction(msg) {

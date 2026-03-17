@@ -351,14 +351,14 @@ export function showAddResourceModal() { const cs = state.collections?.resources
 
 
 export function showAddLogModal() {
-    showModal('📝 记录学习', `<div class="md-editor-split"><div id="journal-preview" class="md-editor-preview"><p style="color:var(--text-muted)">实时预览... ✨</p></div><textarea id="journal-input" class="md-editor-textarea" placeholder="在这里编写...\n支持 **粗体** *斜体* \`代码\` - 列表"></textarea></div> <button class="btn-submit" id="btn-save-log">保存 💾</button>`);
+    showModal('📝 记录学习', `<div class="md-editor-split"><div id="journal-preview" class="md-editor-preview"><p style="color:var(--text-muted)">实时预览... ✨</p></div><textarea id="journal-input" class="md-editor-textarea" placeholder="在这里编写...\n支持 **粗体** *斜体* \`代码\` - 列表"></textarea></div> <button class="btn-submit" id="btn-save-log">保存 💾</button>`, { wide: true });
     setupLivePreview('journal-input', 'journal-preview');
     document.getElementById('btn-save-log').addEventListener('click', async () => { const c = document.getElementById('journal-input').value.trim(); if (!c) return showToast('请填写', 'error'); const entries = state.collections?.journal || []; entries.unshift({ date: new Date().toISOString(), content: c }); await apiPost({ action: 'update-journal', entries }); hideModal(); showToast('已保存'); renderJournal(); });
 }
 
 
 export function showEditLogModal(entry, index) {
-    showModal('📝 编辑记录', `<div class="md-editor-split"><div id="journal-edit-preview" class="md-editor-preview"></div><textarea id="journal-edit-input" class="md-editor-textarea">${escapeHtml(entry.content)}</textarea></div> <button class="btn-submit" id="btn-update-log">更新 💾</button>`);
+    showModal('📝 编辑记录', `<div class="md-editor-split"><div id="journal-edit-preview" class="md-editor-preview"></div><textarea id="journal-edit-input" class="md-editor-textarea">${escapeHtml(entry.content)}</textarea></div> <button class="btn-submit" id="btn-update-log">更新 💾</button>`, { wide: true });
     setupLivePreview('journal-edit-input', 'journal-edit-preview');
     document.getElementById('btn-update-log').addEventListener('click', async () => { const c = document.getElementById('journal-edit-input').value.trim(); if (!c) return showToast('请填写', 'error'); const entries = state.collections?.journal || []; entries[index].content = c; await apiPost({ action: 'update-journal', entries }); hideModal(); showToast('已更新'); renderJournal(); });
 }

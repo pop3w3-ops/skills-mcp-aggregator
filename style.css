@@ -866,11 +866,17 @@ main {
   border: 1.5px solid var(--border);
   border-radius: 18px;
   width: 92%;
-  max-width: 720px;
+  max-width: 600px; /* Default for simple forms */
   overflow: visible;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: max-width 0.3s ease;
 }
+
+.modal.wide {
+  max-width: 1000px;
+}
+
 
 @keyframes modalPop {
   from {
@@ -1276,41 +1282,51 @@ main {
 .md-editor-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 16px;
+  margin-bottom: 16px;
+  height: 60vh;
+  min-height: 400px;
 }
 
 .md-editor-textarea {
   width: 100%;
-  min-height: 320px;
-  background: var(--bg-flat);
+  height: 100%;
+  background: var(--bg);
   border: 1.5px solid var(--border);
   color: var(--text);
-  padding: 12px;
+  padding: 16px;
   border-radius: var(--radius-sm);
-  font-family: 'Courier New', monospace;
-  font-size: 0.84rem;
-  line-height: 1.7;
-  resize: vertical;
+  font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  resize: none;
+  tab-size: 4;
 }
 
 .md-editor-textarea:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .md-editor-preview {
-  min-height: 320px;
-  background: var(--bg-flat);
+  height: 100%;
+  background: var(--bg-card);
   border: 1.5px solid var(--border);
-  padding: 12px;
+  padding: 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.86rem;
-  line-height: 1.8;
+  font-size: 0.95rem;
+  line-height: 1.7;
   overflow-y: auto;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  white-space: pre-wrap;
+}
+
+/* Sync preview styles with the actual journal entries */
+.md-editor-preview h1, .md-editor-preview h2, .md-editor-preview h3 {
+  color: var(--accent);
+  margin: 16px 0 8px;
+  font-weight: 900;
 }
 
 .md-editor-preview strong {
@@ -1320,23 +1336,24 @@ main {
 
 .md-editor-preview code {
   background: var(--accent-light);
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.8em;
+  font-size: 0.85em;
+  font-family: monospace;
 }
 
 .md-editor-preview p {
-  margin: 0 0 8px 0;
+  margin-bottom: 12px;
 }
 
 .md-editor-preview ul,
 .md-editor-preview ol {
-  padding-left: 20px;
-  margin: 4px 0 8px 0;
+  padding-left: 24px;
+  margin-bottom: 12px;
 }
 
 .md-editor-preview li {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 /* ========== Command Palette ========== */
