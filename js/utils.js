@@ -57,11 +57,30 @@ export function updateNotifBadge() {
     b.style.display = u > 0 ? '' : 'none';
 }
 
+export function renderNotifications() {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    if (state.notifications.length === 0) {
+        list.innerHTML = '<div class="notif-empty">暂无通知</div>';
+        return;
+    }
+    list.innerHTML = state.notifications.map(n => `
+        <div class="notif-item ${n.read ? 'read' : ''}">
+            <div class="notif-msg">${escapeHtml(n.msg)}</div>
+            <div class="notif-time">${new Date(n.time).toLocaleString('zh-CN')}</div>
+        </div>
+    `).join('');
+}
+
 export function toggleNotifications() {
     const p = document.getElementById('notif-panel');
     p.classList.toggle('open');
     if (p.classList.contains('open')) {
-        document.dispatchEvent(new CustomEvent('renderNotificationsRequest'));
+        renderNotifications();
+        // Mark all as read
+        state.notifications.forEach(n => n.read = true);
+        localStorage.setItem('notifications', JSON.stringify(state.notifications));
+        updateNotifBadge();
     }
 }
 

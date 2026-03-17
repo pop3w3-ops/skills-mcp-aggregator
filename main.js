@@ -6,22 +6,16 @@ import { createCollectionCard, addBatchToggle, addBtn, createFilterRow, inlineEd
 import { enableDrag, initGlobalDrop } from './js/drag-drop.js';
 import { showCommandPalette, updateCmdResults, scrollHL, initSearch } from './js/search.js';
 
-window.toggleNotifications = toggleNotifications;
-window.clearNotifications = clearNotifications;
-
 // Map exports to window so internal legacy calls work during transition
-Object.assign(window, { renderDashboard, renderNews, renderSkills, renderCollection, renderResources, renderJournal, createCollectionCard, addBatchToggle, addBtn, createFilterRow, inlineEdit, showViewItemModal, showEditItemModal, showAddItemModal, showAddCategoryModal, showEditResourceModal, showAddResourceModal, showAddLogModal, showEditLogModal, setupLivePreview, enableDrag, initGlobalDrop, showCommandPalette, updateCmdResults, scrollHL, initSearch });
-
-document.addEventListener('renderNotificationsRequest', () => {
-    if (typeof renderNotifications === 'function') renderNotifications();
+Object.assign(window, { 
+    renderDashboard, renderNews, renderSkills, renderCollection, renderResources, renderJournal, 
+    createCollectionCard, addBatchToggle, addBtn, createFilterRow, inlineEdit, 
+    showViewItemModal, showEditItemModal, showAddItemModal, showAddCategoryModal, 
+    showEditResourceModal, showAddResourceModal, showAddLogModal, showEditLogModal, 
+    setupLivePreview, enableDrag, initGlobalDrop, showCommandPalette, updateCmdResults, 
+    scrollHL, initSearch, toggleNotifications, clearNotifications, toggleTheme
 });
 
-window.toggleNotifications = toggleNotifications;
-window.clearNotifications = clearNotifications;
-
-document.addEventListener('renderNotificationsRequest', () => {
-    if (typeof renderNotifications === 'function') renderNotifications();
-});
 
 /**
  * 代理中心 v10 — 右侧栏 + 分类拖拽 + 模糊搜索
