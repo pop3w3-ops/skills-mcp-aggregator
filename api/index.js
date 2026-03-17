@@ -58,7 +58,8 @@ async function loadData() {
         news: { categories: ['AI 前沿', '大模型', '开源项目', '行业应用'], items: [] },
         mcp: { categories: ['数据库', '浏览器', '文件处理', '搜索', '效率工具'], items: [] },
         skills: { categories: ['编程', '写作', '数据分析', '设计', '通用'], items: [] },
-        resources: { categories: ['资源站', '市场', 'GitHub', '导航站'], items: [] }
+        resources: { categories: ['资源站', '市场', 'GitHub', '导航站'], items: [] },
+        journal: []
     };
 }
 
@@ -211,13 +212,70 @@ export default async function handler(req, res) {
         if (pathname === '/api/collections' && req.method === 'POST') {
             const body = await parseBody(req);
             const data = await loadData();
-            const { action, type } = body;
-            // Simplified actions for brevity, can be expanded
-            if (action === 'add-item') {
-                const { item } = body;
-                if (!data[type]) data[type] = { categories: [], items: [] };
-                data[type].items.push(item);
+            const { action, type, index, item, category, entries, oldName, newName } = body;
+            
+            if (!data.journal) data.journal = [];
+
+            switch (action) {
+                case 'add-item':
+                    if (!data[type]) data[type] = { categories: [], items: [] };
+                    // 简单的去重检查
+                    const isDup = data[type].items.some(it => (it.name || it.title) === (item.name || item.title));
+                    if (!isDup) {
+                        data[type].items.push(item);
+                    }
+                    break;
+
+                case 'delete-item':
+                    if (data[type]?.items?.[index]) {
+                        data[type].items.splice(index, 1);
+                    }
+                    break;
+
+                case 'update-item':
+                    if (data[type]?.items?.[index]) {
+                        data[type].items[index] = item;
+                    }
+                    break;
+
+                case 'increment-clicks':
+                    if (data[type]?.items?.[index]) {
+                        data[type].items[index].clicks = (data[type].items[index].clicks || 0) + 1;
+                    }
+                    break;
+
+                case 'update-journal':
+                    data.journal = entries || [];
+                    break;
+
+                case 'add-category':
+                    if (data[type] && !data[type].categories.includes(category)) {
+                        data[type].categories.push(category);
+                    }
+                    break;
+
+                case 'delete-category':
+                    if (data[type]) {
+                        data[type].categories = data[type].categories.filter(c => c !== category);
+                        data[type].items = data[type].items.filter(it => it.category !== category);
+                    }
+                    break;
+
+                case 'rename-category':
+                    if (data[type]) {
+                        data[type].categories = data[type].categories.map(c => c === oldName ? newName : c);
+                        data[type].items = data[type].items.map(it => ({ 
+                            ...it, 
+                            category: it.category === oldName ? newName : it.category 
+                        }));
+                    }
+                    break;
+
+                case 'import-section':
+                    if (body.data) data[type] = body.data;
+                    break;
             }
+
             await saveData(data);
             res.statusCode = 200;
             res.end(JSON.stringify({ ok: true, data }));
