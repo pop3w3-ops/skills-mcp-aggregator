@@ -98,7 +98,12 @@ export async function renderNews() {
         let items = data.items || [];
         if (!items.length) { contentGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌟</div><p>暂无资讯，点击刷新</p></div>'; return; }
         items = applySortNews(items); window._newsItems = items; contentGrid.innerHTML = '';
-        const sources = [...new Set(items.map(it => it.source).filter(Boolean))];
+        let sources = ['全部', ...new Set(items.map(i => i.source).filter(Boolean))];
+        // Ensure GitHub is pushed to the first position after 全部
+        if (sources.includes('GitHub')) {
+            sources = sources.filter(s => s !== 'GitHub');
+            sources.splice(1, 0, 'GitHub');
+        }
         if (sources.length > 1) contentGrid.appendChild(createFilterRow(sources, s => { document.querySelectorAll('.news-card').forEach(c => c.style.display = s ? (c.dataset.source === s ? '' : 'none') : ''); }, false, 'news'));
         items.forEach((item, i) => {
             const key = `news-${item.link || item.title}`, isRead = readItems[key];
@@ -295,7 +300,8 @@ export function renderJournal() {
     if (!entries.length) { contentGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>还没有学习记录</p></div>'; return; }
     const wrapper = document.createElement('div'); wrapper.className = 'journal-layout';
     const nav = document.createElement('div'); nav.className = 'journal-nav';
-    const navTitle = document.createElement('div'); navTitle.className = 'journal-nav-title'; navTitle.textContent = '📅 日期导航'; nav.appendChild(navTitle);
+    const navTitle = document.createElement('div'); navTitle.className = 'journal-nav-title'; navTitle.textContent = '📅 日期导航';
+    nav.appendChild(navTitle);
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Dedup dates: each date only once, click navigates to first (latest) entry for that date

@@ -21,7 +21,20 @@ const modalClose = document.getElementById('modal-close');
 export function markAsRead(key, card) { readItems[key] = true; localStorage.setItem('readItems', JSON.stringify(readItems)); card?.classList.add('read'); }
 
 
-export function applySortNews(items) { const m = sortStates['news'] || 'date'; const s = [...items]; if (m === 'name') s.sort((a, b) => (a.title || '').localeCompare(b.title || '')); if (m === 'name-desc') s.sort((a, b) => (b.title || '').localeCompare(a.title || '')); if (m === 'date') s.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0)); return s; }
+export function applySortNews(items) { 
+    const m = sortStates['news'] || 'rank'; 
+    const s = [...items]; 
+    if (m === 'rank') s.sort((a, b) => {
+        const ra = a.rank || 999;
+        const rb = b.rank || 999;
+        if (ra !== rb) return ra - rb;
+        return new Date(b.pubDate || 0) - new Date(a.pubDate || 0);
+    });
+    if (m === 'name') s.sort((a, b) => (a.title || '').localeCompare(b.title || '')); 
+    if (m === 'name-desc') s.sort((a, b) => (b.title || '').localeCompare(a.title || '')); 
+    if (m === 'date') s.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0)); 
+    return s; 
+}
 
 
 
@@ -66,9 +79,9 @@ export function applySort(items, type) {
 export function addSortSelect(type, onSort) {
     const sel = document.createElement('select'); sel.className = 'sort-select';
     let opts = [['default', '📋 默认'], ['name', '🔤 A→Z'], ['name-desc', '🔤 Z→A']];
-    if (type === 'news') opts = [['date', '📅 最新优先'], ['name', '🔤 A→Z'], ['name-desc', '🔤 Z→A']];
+    if (type === 'news') opts = [['rank', '📌 排名优先'], ['date', '📅 最新优先'], ['name', '🔤 A→Z'], ['name-desc', '🔤 Z→A']];
     if (type === 'skills') opts = [['clicks', '🔥 热门优先'], ['name', '🔤 A→Z'], ['name-desc', '🔤 Z→A'], ['default', '📋 默认']];
-    const currVal = sortStates[type] || (type === 'skills' ? 'clicks' : 'default');
+    const currVal = sortStates[type] || (type === 'skills' ? 'clicks' : type === 'news' ? 'rank' : 'default');
     sel.innerHTML = opts.map(([v, l]) => `<option value="${v}"${currVal === v ? ' selected' : ''}>${l}</option>`).join('');
     sel.addEventListener('change', () => { sortStates[type] = sel.value; onSort(); }); actionBar.appendChild(sel);
 }

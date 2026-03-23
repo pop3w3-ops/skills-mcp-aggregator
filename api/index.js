@@ -234,37 +234,58 @@ async function fetchAllNews() {
     return results;
 }
 
-// Translation using Google Translate Unofficial Edge API
+// ========== 翻译代理(服务端) ==========
+// 用 Google Translate (无限制免Key API)
+const translationCache = new Map();
+
+async function translateTextWithRetry(text, from = 'en', to = 'zh-CN', retries = 3) {
+    if (!text || text.length < 3) return text;
+    const cacheKey = `${from}:${to}:${text}`;
+    if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
+
+    for (let i = 0; i < retries; i++) {
+        try {
+            await new Promise(r => setTimeout(r, 800)); // Play nice with Google
+            const encodedText = encodeURIComponent(text);
+            const apiUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodedText}`;
+            const response = await fetchUrl(apiUrl);
+            const data = JSON.parse(response);
+            if (data && data[0] && data[0][0]) {
+                const translated = data[0].map(x => x[0]).join('');
+                translationCache.set(cacheKey, translated);
+                return translated;
+            }
+        } catch (e) {
+            if (i === retries - 1) console.warn('翻译失败:', e.message);
+            await new Promise(r => setTimeout(r, 1500)); // Backoff on error
+        }
+    }
+    return text; // 翻译失败返回原文
+}
+
+// 批量翻译新闻条目
 async function translateNewsItems(items) {
-    const translated = [];
+    const translatedItems = [];
     for (const item of items) {
         if (item.lang === 'en') {
-            try {
-                // Free google translate API, no rate limit issues typically
-                await new Promise(r => setTimeout(r, 200));
-                
-                // Translate Title
-                const titleRes = await fetchUrl(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=${encodeURIComponent(item.title)}`);
-                const titleData = JSON.parse(titleRes);
-                if (titleData && titleData[0] && titleData[0][0]) {
-                    item.titleOriginal = item.title;
-                    item.title = titleData[0].map(x => x[0]).join('');
-                }
-
-                // Translate Description if short enough
-                if (item.description && item.description.length < 1500) {
-                    await new Promise(r => setTimeout(r, 200));
-                    const descRes = await fetchUrl(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=${encodeURIComponent(item.description)}`);
-                    const descData = JSON.parse(descRes);
-                    if (descData && descData[0] && descData[0][0]) {
-                        item.description = descData[0].map(x => x[0]).join('');
-                    }
-                }
-            } catch (e) { console.error('Translation error:', e.message); }
+            // GitHub 项目标题保持原样，其它标题翻译
+            const translatedTitle = item.source === 'GitHub' ? item.title : await translateTextWithRetry(item.title);
+            let translatedDesc = item.description;
+            if (item.description && item.description.length < 1500) {
+                translatedDesc = await translateTextWithRetry(item.description);
+            }
+            translatedItems.push({
+                ...item,
+                title: translatedTitle,
+                titleOriginal: item.title,
+                description: translatedDesc,
+                descOriginal: item.description
+            });
+        } else {
+            translatedItems.push(item);
         }
-        translated.push(item);
     }
-    return translated;
+    return translatedItems;
 }
 
 function parseBody(req) {
