@@ -58,15 +58,23 @@ function initTheme() { const s = localStorage.getItem('theme') || 'light'; docum
 function toggleTheme() { const c = document.documentElement.getAttribute('data-theme'); const n = c === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('theme', n); const b = document.getElementById('theme-toggle'); if (b) b.textContent = n === 'dark' ? '☀️' : '🌙'; }
 
 // ====== Tabs ======
-function handleTabChange(tab) {
-    state.currentTab = tab; state.renderVersion++; state.batchMode = false; state.batchSelected.clear();
+function handleTabChange(tab, scrollToId) {
+    // Only increment version and reset batch mode if the tab is different or there's NO scrollToId
+    // This prevents losing highlights if someone navigates to the same tab but wants to scroll to a specific item
+    if (state.currentTab !== tab || !scrollToId) {
+        state.currentTab = tab; 
+        state.renderVersion++; 
+        state.batchMode = false; 
+        state.batchSelected.clear();
+    }
+    
     navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
     document.getElementById('sidebar')?.classList.remove('open');
     // Update topbar title
     const titles = { dashboard: '📊 总览', news: '🔥 热门资讯', mcp: '🛠️ MCP', skills: '⚡ Skills', journal: '📝 学习日记', 'saved-news': '📰 资讯收藏', resources: '📚 资源合辑' };
     const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = titles[tab] || '';
     if (tab === 'dashboard') renderDashboard();
-    else if (tab === 'news') renderNews();
+    else if (tab === 'news') renderNews(scrollToId); // Only renderNews handles async scrolls elegantly 
     else if (tab === 'mcp') renderCollection('mcp');
     else if (tab === 'skills') renderSkills();
     else if (tab === 'journal') renderJournal();

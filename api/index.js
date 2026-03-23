@@ -128,16 +128,63 @@ function parseRssItems(xml) {
     return items;
 }
 
+// ========== 热榜 API 获取 ==========
+async function fetch36krHot() {
+    try {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const url = `https://openclaw.36krcdn.com/media/hotlist/${dateStr}/24h_hot_list.json`;
+        const raw = await fetchUrl(url);
+        const data = JSON.parse(raw);
+        if (data && data.hot_list) {
+            return data.hot_list.slice(0, 15).map(item => ({
+                title: item.title,
+                link: item.url,
+                description: item.content ? item.content.slice(0, 150) + '...' : '',
+                pubDate: item.publish_time,
+                source: '36氪',
+                lang: 'zh',
+                isHot: true
+            }));
+        }
+    } catch (e) { console.error('36kr hot list error:', e.message); }
+    return [];
+}
+
+async function fetchSspaiHot() {
+    try {
+        const url = `https://sspai.com/api/v1/article/tag/page/get?limit=15&offset=0&tag=%E7%83%AD%E6%A6%9C`; // URL encoded "热榜"
+        const raw = await fetchUrl(url);
+        const data = JSON.parse(raw);
+        if (data && data.data && data.data.length > 0) {
+            return data.data.map(item => ({
+                title: item.title,
+                link: `https://sspai.com/post/${item.id}`,
+                description: item.summary ? item.summary.slice(0, 150) + '...' : '',
+                pubDate: new Date(item.released_time * 1000).toISOString(),
+                source: '少数派',
+                lang: 'zh',
+                isHot: true
+            }));
+        }
+    } catch (e) { console.error('sspai hot list error:', e.message); }
+    return [];
+}
+
 // Feeds
 const ALL_FEEDS = [
-    { url: 'https://36kr.com/feed', source: '36氪', lang: 'zh' },
     { url: 'https://www.ithome.com/rss/', source: 'IT之家', lang: 'zh' },
-    { url: 'https://sspai.com/feed', source: '少数派', lang: 'zh' },
     { url: 'https://the-decoder.com/feed/', source: 'THE DECODER', lang: 'en' },
 ];
 
 async function fetchAllNews() {
     const results = [];
+    
+    // Fetch Hot Lists
+    const hot36kr = await fetch36krHot();
+    const hotSspai = await fetchSspaiHot();
+    results.push(...hot36kr, ...hotSspai);
+
+    // Fetch remaining RSS feeds
     const promises = ALL_FEEDS.map(async (feed) => {
         try {
             const xml = await fetchUrl(feed.url);
@@ -146,7 +193,7 @@ async function fetchAllNews() {
                 item.source = feed.source;
                 item.lang = feed.lang;
             });
-            return items.slice(0, 10);
+            return items.slice(0, 15);
         } catch (e) {
             return [];
         }
@@ -157,8 +204,38 @@ async function fetchAllNews() {
     return results;
 }
 
-// Translation stub
-async function translateNewsItems(items) { return items; }
+// Translation using MyMemory API
+async function translateNewsItems(items) {
+    const translated = [];
+    for (const item of items) {
+        if (item.lang === 'en') {
+            try {
+                // Free translation API, 300ms delay to avoid rate limiting
+                await new Promise(r => setTimeout(r, 400));
+                
+                // Translate Title
+                const titleRes = await fetchUrl(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.title)}&langpair=en|zh-CN`);
+                const titleData = JSON.parse(titleRes);
+                if (titleData.responseData?.translatedText) {
+                    item.titleOriginal = item.title;
+                    item.title = titleData.responseData.translatedText;
+                }
+
+                // Translate Description if short enough
+                if (item.description && item.description.length < 500) {
+                    await new Promise(r => setTimeout(r, 400));
+                    const descRes = await fetchUrl(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.description)}&langpair=en|zh-CN`);
+                    const descData = JSON.parse(descRes);
+                    if (descData.responseData?.translatedText) {
+                        item.description = descData.responseData.translatedText;
+                    }
+                }
+            } catch (e) { console.error('Translation error:', e.message); }
+        }
+        translated.push(item);
+    }
+    return translated;
+}
 
 function parseBody(req) {
     return new Promise((resolve) => {

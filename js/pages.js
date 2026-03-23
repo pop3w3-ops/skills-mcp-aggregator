@@ -35,12 +35,12 @@ export function renderDashboard() {
 }
 
 // ====== Hot News (batch copy links) ======
-export async function renderNews() {
+export async function renderNews(scrollToId) {
     const mv = state.renderVersion;
     actionBar.innerHTML = '';
 
     // 1. Sort
-    addSortSelect('news', () => renderNews());
+    addSortSelect('news', () => renderNews(scrollToId));
 
     // Button order starts with sort, then refresh
     const btnR = document.createElement('button'); btnR.className = 'btn'; btnR.textContent = '🔄 刷新';
@@ -149,6 +149,18 @@ export async function renderNews() {
         });
         state._displayedItems['news'] = items;
         initRubberBand(contentGrid, 'news');
+        
+        // Highlight logic after async load
+        if (scrollToId) {
+            setTimeout(() => {
+                const el = document.getElementById(scrollToId);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('search-highlight');
+                    setTimeout(() => el.classList.remove('search-highlight'), 3500);
+                }
+            }, 100);
+        }
     } catch (e) { if (state.renderVersion !== mv) return; contentGrid.innerHTML = '<div class="error-state">❌ 加载失败</div>'; }
 }
 

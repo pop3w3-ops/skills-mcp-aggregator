@@ -43,7 +43,7 @@ export function updateCmdResults(query) {
     };
 
     (window._newsItems || []).forEach((item, i) => {
-        addResult('🔥', item.title, item.source, () => { hideModal(); window.handleTabChange('news'); setTimeout(() => scrollHL(`news-item-${i}`), 300); }, item.title + ' ' + (item.description || ''));
+        addResult('🔥', item.title, item.source, () => { hideModal(); window.handleTabChange('news', `news-item-${i}`); }, item.title + ' ' + (item.description || ''));
     });
     [{ key: 'skills', icon: '⚡', tab: 'skills' }, { key: 'mcp', icon: '🛠️', tab: 'mcp' }, { key: 'news', icon: '📰', tab: 'saved-news' }].forEach(({ key, icon, tab }) => {
         (state.collections?.[key]?.items || []).forEach((item, i) => {
@@ -54,12 +54,12 @@ export function updateCmdResults(query) {
                     const activeList = state._displayedItems[key] || state.collections?.[key]?.items || [];
                     const dispIdx = activeList.findIndex(it => (it.name || it.title) === (item.name || item.title));
                     scrollHL(`${key}-item-${dispIdx !== -1 ? dispIdx : i}`);
-                }, 300);
+                }, 400); // Increased timeout for DOM to settle
             }, (item.name || item.title || '') + ' ' + (item.description || ''));
         });
     });
-    DEFAULT_RESOURCES.concat(state.collections?.resources?.items || []).forEach(res => {
-        addResult('📚', res.name, res.tag, () => { hideModal(); window.handleTabChange('resources'); }, res.name + ' ' + (res.description || ''));
+    DEFAULT_RESOURCES.concat(state.collections?.resources?.items || []).forEach((res, i) => {
+        addResult('📚', res.name, res.tag, () => { hideModal(); window.handleTabChange('resources'); setTimeout(() => scrollHL(`resources-item-${i}`), 400); }, res.name + ' ' + (res.description || ''));
     });
 
     // Sort by similarity (exact first, then fuzzy)
