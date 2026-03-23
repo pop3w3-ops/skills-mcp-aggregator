@@ -35,12 +35,12 @@ export function renderDashboard() {
 }
 
 // ====== Hot News (batch copy links) ======
-export async function renderNews(scrollToId) {
+export async function renderNews() {
     const mv = state.renderVersion;
     actionBar.innerHTML = '';
 
     // 1. Sort
-    addSortSelect('news', () => renderNews(scrollToId));
+    addSortSelect('news', () => renderNews());
 
     // Button order starts with sort, then refresh
     const btnR = document.createElement('button'); btnR.className = 'btn'; btnR.textContent = '🔄 刷新';
@@ -131,6 +131,20 @@ export async function renderNews(scrollToId) {
             // Abstract the footer completely with the new button group
             const ft = document.createElement('div'); ft.className = 'card-footer';
             const leftFt = document.createElement('div'); leftFt.style.display = 'flex'; leftFt.style.gap = '5px';
+            
+            if (item.isHot && item.rank) {
+                const rk = document.createElement('span'); 
+                rk.className = 'hot-rank tag tag-pink'; 
+                rk.textContent = `Top ${item.rank}`; 
+                leftFt.appendChild(rk);
+            }
+            if (item.heat) {
+                const ht = document.createElement('span');
+                ht.className = 'tag hot-heat tag-system';
+                ht.innerHTML = `🔥 ${item.heat}`;
+                leftFt.appendChild(ht);
+            }
+
             const dt = document.createElement('span'); dt.className = 'tag tag-accent'; dt.textContent = item.pubDate ? new Date(item.pubDate).toLocaleDateString('zh-CN') : '最新'; leftFt.appendChild(dt);
             if (item.lang === 'en') { const lt = document.createElement('span'); lt.className = 'tag tag-green'; lt.textContent = '已翻译'; leftFt.appendChild(lt); }
             if (isRead) { const rt = document.createElement('span'); rt.className = 'tag tag-blue'; rt.textContent = '已读'; leftFt.appendChild(rt); }
@@ -149,18 +163,6 @@ export async function renderNews(scrollToId) {
         });
         state._displayedItems['news'] = items;
         initRubberBand(contentGrid, 'news');
-        
-        // Highlight logic after async load
-        if (scrollToId) {
-            setTimeout(() => {
-                const el = document.getElementById(scrollToId);
-                if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('search-highlight');
-                    setTimeout(() => el.classList.remove('search-highlight'), 3500);
-                }
-            }, 100);
-        }
     } catch (e) { if (state.renderVersion !== mv) return; contentGrid.innerHTML = '<div class="error-state">❌ 加载失败</div>'; }
 }
 

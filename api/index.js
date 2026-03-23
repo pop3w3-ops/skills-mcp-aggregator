@@ -136,14 +136,16 @@ async function fetch36krHot() {
         const raw = await fetchUrl(url);
         const data = JSON.parse(raw);
         if (data && data.hot_list) {
-            return data.hot_list.slice(0, 15).map(item => ({
+            return data.hot_list.slice(0, 15).map((item, idx) => ({
                 title: item.title,
                 link: item.url,
                 description: item.content ? item.content.slice(0, 150) + '...' : '',
                 pubDate: item.publish_time,
                 source: '36氪',
                 lang: 'zh',
-                isHot: true
+                isHot: true,
+                rank: idx + 1,
+                heat: item.hot_value ? (item.hot_value > 10000 ? (item.hot_value/10000).toFixed(1) + 'w' : item.hot_value) : null
             }));
         }
     } catch (e) { console.error('36kr hot list error:', e.message); }
@@ -156,14 +158,16 @@ async function fetchSspaiHot() {
         const raw = await fetchUrl(url);
         const data = JSON.parse(raw);
         if (data && data.data && data.data.length > 0) {
-            return data.data.map(item => ({
+            return data.data.map((item, idx) => ({
                 title: item.title,
                 link: `https://sspai.com/post/${item.id}`,
                 description: item.summary ? item.summary.slice(0, 150) + '...' : '',
                 pubDate: new Date(item.released_time * 1000).toISOString(),
                 source: '少数派',
                 lang: 'zh',
-                isHot: true
+                isHot: true,
+                rank: idx + 1,
+                heat: item.view_count || item.like_count || null
             }));
         }
     } catch (e) { console.error('sspai hot list error:', e.message); }
@@ -204,30 +208,30 @@ async function fetchAllNews() {
     return results;
 }
 
-// Translation using MyMemory API
+// Translation using Google Translate Unofficial Edge API
 async function translateNewsItems(items) {
     const translated = [];
     for (const item of items) {
         if (item.lang === 'en') {
             try {
-                // Free translation API, 300ms delay to avoid rate limiting
-                await new Promise(r => setTimeout(r, 400));
+                // Free google translate API, no rate limit issues typically
+                await new Promise(r => setTimeout(r, 200));
                 
                 // Translate Title
-                const titleRes = await fetchUrl(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.title)}&langpair=en|zh-CN`);
+                const titleRes = await fetchUrl(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=${encodeURIComponent(item.title)}`);
                 const titleData = JSON.parse(titleRes);
-                if (titleData.responseData?.translatedText) {
+                if (titleData && titleData[0] && titleData[0][0]) {
                     item.titleOriginal = item.title;
-                    item.title = titleData.responseData.translatedText;
+                    item.title = titleData[0].map(x => x[0]).join('');
                 }
 
                 // Translate Description if short enough
-                if (item.description && item.description.length < 500) {
-                    await new Promise(r => setTimeout(r, 400));
-                    const descRes = await fetchUrl(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.description)}&langpair=en|zh-CN`);
+                if (item.description && item.description.length < 1500) {
+                    await new Promise(r => setTimeout(r, 200));
+                    const descRes = await fetchUrl(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=${encodeURIComponent(item.description)}`);
                     const descData = JSON.parse(descRes);
-                    if (descData.responseData?.translatedText) {
-                        item.description = descData.responseData.translatedText;
+                    if (descData && descData[0] && descData[0][0]) {
+                        item.description = descData[0].map(x => x[0]).join('');
                     }
                 }
             } catch (e) { console.error('Translation error:', e.message); }

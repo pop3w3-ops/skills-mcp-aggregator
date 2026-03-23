@@ -59,27 +59,38 @@ function toggleTheme() { const c = document.documentElement.getAttribute('data-t
 
 // ====== Tabs ======
 function handleTabChange(tab, scrollToId) {
-    // Only increment version and reset batch mode if the tab is different or there's NO scrollToId
-    // This prevents losing highlights if someone navigates to the same tab but wants to scroll to a specific item
-    if (state.currentTab !== tab || !scrollToId) {
-        state.currentTab = tab; 
-        state.renderVersion++; 
-        state.batchMode = false; 
-        state.batchSelected.clear();
+    if (state.currentTab === tab && scrollToId) {
+        // Just jumping within the same tab
+        setTimeout(() => window.scrollHL(scrollToId), 100);
+        return;
     }
+
+    state.currentTab = tab; 
+    state.renderVersion++; 
+    state.batchMode = false; 
+    state.batchSelected.clear();
     
     navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
     document.getElementById('sidebar')?.classList.remove('open');
     // Update topbar title
     const titles = { dashboard: '📊 总览', news: '🔥 热门资讯', mcp: '🛠️ MCP', skills: '⚡ Skills', journal: '📝 学习日记', 'saved-news': '📰 资讯收藏', resources: '📚 资源合辑' };
     const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = titles[tab] || '';
+    
+    // Render the target tab
     if (tab === 'dashboard') renderDashboard();
-    else if (tab === 'news') renderNews(scrollToId); // Only renderNews handles async scrolls elegantly 
+    else if (tab === 'news') renderNews();
     else if (tab === 'mcp') renderCollection('mcp');
     else if (tab === 'skills') renderSkills();
     else if (tab === 'journal') renderJournal();
     else if (tab === 'saved-news') renderCollection('news');
     else if (tab === 'resources') renderResources();
+
+    if (scrollToId) {
+        // Tab was switched, wait for render to complete then scroll
+        // News takes longer because of the api call
+        const waitMs = tab === 'news' ? 800 : 300; 
+        setTimeout(() => { if (window.scrollHL) window.scrollHL(scrollToId); }, waitMs);
+    }
 }
 navBtns.forEach(btn => btn.addEventListener('click', () => handleTabChange(btn.dataset.tab)));
 
