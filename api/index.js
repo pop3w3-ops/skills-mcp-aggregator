@@ -174,6 +174,31 @@ async function fetchSspaiHot() {
     return [];
 }
 
+async function fetchGithubTrending() {
+    try {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        const dateStr = d.toISOString().split('T')[0];
+        const url = `https://api.github.com/search/repositories?q=created:>${dateStr}&sort=stars&order=desc`;
+        const raw = await fetchUrl(url);
+        const data = JSON.parse(raw);
+        if (data && data.items && data.items.length > 0) {
+            return data.items.slice(0, 15).map((item, idx) => ({
+                title: item.full_name,
+                link: item.html_url,
+                description: item.description ? item.description.slice(0, 150) + '...' : '',
+                pubDate: item.created_at,
+                source: 'GitHub',
+                lang: 'en',
+                isHot: true,
+                rank: idx + 1,
+                heat: item.stargazers_count ? (item.stargazers_count > 1000 ? (item.stargazers_count/1000).toFixed(1) + 'k' : item.stargazers_count) : null
+            }));
+        }
+    } catch (e) { console.warn('GitHub trending error:', e.message); }
+    return [];
+}
+
 // Feeds
 const ALL_FEEDS = [
     { url: 'https://www.ithome.com/rss/', source: 'IT之家', lang: 'zh' },
@@ -186,7 +211,8 @@ async function fetchAllNews() {
     // Fetch Hot Lists
     const hot36kr = await fetch36krHot();
     const hotSspai = await fetchSspaiHot();
-    results.push(...hot36kr, ...hotSspai);
+    const hotGithub = await fetchGithubTrending();
+    results.push(...hot36kr, ...hotSspai, ...hotGithub);
 
     // Fetch remaining RSS feeds
     const promises = ALL_FEEDS.map(async (feed) => {

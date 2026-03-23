@@ -95,25 +95,94 @@ function extractCDATA(block, tag) {
     return simpleMatch ? simpleMatch[1] : '';
 }
 
+// ========== 热榜 API 获取 ==========
+async function fetch36krHot() {
+    try {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const url = `https://openclaw.36krcdn.com/media/hotlist/${dateStr}/24h_hot_list.json`;
+        const raw = await fetchUrl(url);
+        const data = JSON.parse(raw);
+        if (data && data.hot_list) {
+            return data.hot_list.slice(0, 15).map((item, idx) => ({
+                title: item.title,
+                link: item.url,
+                description: item.content ? item.content.slice(0, 150) + '...' : '',
+                pubDate: item.publish_time,
+                source: '36氪',
+                lang: 'zh',
+                isHot: true,
+                rank: idx + 1,
+                heat: item.hot_value ? (item.hot_value > 10000 ? (item.hot_value/10000).toFixed(1) + 'w' : item.hot_value) : null
+            }));
+        }
+    } catch (e) { console.warn('36kr hot list error:', e.message); }
+    return [];
+}
+
+async function fetchSspaiHot() {
+    try {
+        const url = `https://sspai.com/api/v1/article/tag/page/get?limit=15&offset=0&tag=%E7%83%AD%E6%A6%9C`; 
+        const raw = await fetchUrl(url);
+        const data = JSON.parse(raw);
+        if (data && data.data && data.data.length > 0) {
+            return data.data.map((item, idx) => ({
+                title: item.title,
+                link: `https://sspai.com/post/${item.id}`,
+                description: item.summary ? item.summary.slice(0, 150) + '...' : '',
+                pubDate: new Date(item.released_time * 1000).toISOString(),
+                source: '少数派',
+                lang: 'zh',
+                isHot: true,
+                rank: idx + 1,
+                heat: item.view_count || item.like_count || null
+            }));
+        }
+    } catch (e) { console.warn('sspai hot list error:', e.message); }
+    return [];
+}
+
+async function fetchGithubTrending() {
+    try {
+        // Find date 7 days ago
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        const dateStr = d.toISOString().split('T')[0];
+        const url = `https://api.github.com/search/repositories?q=created:>${dateStr}&sort=stars&order=desc`;
+        const raw = await fetchUrl(url);
+        const data = JSON.parse(raw);
+        if (data && data.items && data.items.length > 0) {
+            return data.items.slice(0, 15).map((item, idx) => ({
+                title: item.full_name,
+                link: item.html_url,
+                description: item.description ? item.description.slice(0, 150) + '...' : '',
+                pubDate: item.created_at,
+                source: 'GitHub',
+                lang: 'en',
+                isHot: true,
+                rank: idx + 1,
+                heat: item.stargazers_count ? (item.stargazers_count > 1000 ? (item.stargazers_count/1000).toFixed(1) + 'k' : item.stargazers_count) : null
+            }));
+        }
+    } catch (e) { console.warn('GitHub trending error:', e.message); }
+    return [];
+}
+
 // ========== RSS 源配置 ==========
-// 中文源
-const CN_FEEDS = [
-    { url: 'https://36kr.com/feed', source: '36氪', lang: 'zh' },
+const ALL_FEEDS = [
     { url: 'https://www.ithome.com/rss/', source: 'IT之家', lang: 'zh' },
-    { url: 'https://sspai.com/feed', source: '少数派', lang: 'zh' },
     { url: 'http://rss.sina.com.cn/news/marquee/ddt.xml', source: '新浪要闻', lang: 'zh' },
-];
-
-// 英文源
-const EN_FEEDS = [
     { url: 'https://the-decoder.com/feed/', source: 'THE DECODER', lang: 'en' },
-    { url: 'https://www.artificialintelligence-news.com/feed/rss/', source: 'AI News', lang: 'en' },
 ];
-
-const ALL_FEEDS = [...CN_FEEDS, ...EN_FEEDS];
 
 async function fetchAllNews() {
     const results = [];
+    
+    // Fetch Hot Lists
+    const hot36kr = await fetch36krHot();
+    const hotSspai = await fetchSspaiHot();
+    const hotGithub = await fetchGithubTrending();
+    results.push(...hot36kr, ...hotSspai, ...hotGithub);
+
     const promises = ALL_FEEDS.map(async (feed) => {
         try {
             const xml = await fetchUrl(feed.url);
@@ -122,7 +191,7 @@ async function fetchAllNews() {
                 item.source = feed.source;
                 item.lang = feed.lang;
             });
-            return items.slice(0, 10);
+            return items.slice(0, 15);
         } catch (e) {
             console.warn(`RSS 获取失败 [${feed.source}]:`, e.message);
             return [];
@@ -136,7 +205,7 @@ async function fetchAllNews() {
 }
 
 // ========== 翻译代理(服务端) ==========
-// 用 MyMemory 翻译 API (中国可用，无需 API key)
+// 用 Google Translate (无限制免Key API)
 const translationCache = new Map();
 
 async function translateText(text, from = 'en', to = 'zh-CN') {
@@ -145,13 +214,13 @@ async function translateText(text, from = 'en', to = 'zh-CN') {
     if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
 
     try {
-        // 尝试 MyMemory API (全球可用，无需key)
-        const encodedText = encodeURIComponent(text.slice(0, 500));
-        const apiUrl = `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=${from}|${to}`;
+        await new Promise(r => setTimeout(r, 200));
+        const encodedText = encodeURIComponent(text);
+        const apiUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodedText}`;
         const response = await fetchUrl(apiUrl);
         const data = JSON.parse(response);
-        if (data.responseData && data.responseData.translatedText) {
-            const translated = data.responseData.translatedText;
+        if (data && data[0] && data[0][0]) {
+            const translated = data[0].map(x => x[0]).join('');
             translationCache.set(cacheKey, translated);
             return translated;
         }
@@ -167,10 +236,11 @@ async function translateNewsItems(items) {
     for (const item of items) {
         if (item.lang === 'en') {
             // 英文新闻 → 翻译为中文
-            const [translatedTitle, translatedDesc] = await Promise.all([
-                translateText(item.title),
-                translateText(item.description)
-            ]);
+            const translatedTitle = await translateText(item.title);
+            let translatedDesc = item.description;
+            if (item.description && item.description.length < 1500) {
+                translatedDesc = await translateText(item.description);
+            }
             translatedItems.push({
                 ...item,
                 title: translatedTitle,
